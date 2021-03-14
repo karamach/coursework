@@ -1,0 +1,45 @@
+#include "ros/ros.h"
+#include "geometry_msgs/Twist.h"
+#include "ball_chaser/DriveToTarget.h"
+
+// ROS::Publisher motor commands;
+ros::Publisher motor_command_publisher;
+
+// This callback function executes whenever a safe_move service is requested
+bool handle_drive_request(ball_chaser::DriveToTarget::Request& req, ball_chaser::DriveToTarget::Response& res)
+{
+    // create a motor_command object of type geometry_msgs:Twist
+    geometry_msgs::Twist motor_command;
+    // Set wheel velocities
+    motor_command.linear.x = req.linear_x;
+    motor_command.angular.z = req.angular_z;
+    // publish angles to drive the robot
+    motor_command_publisher.publish(motor_command);
+
+    // return a response message
+    res.msg_feedback = "linear x: " + std::to_string(req.linear_x) + ", angular z: " + std::to_string(req.angular_z);
+    ROS_INFO_STREAM(res.msg_feedback);
+    return true;
+}
+
+
+int main(int argc, char** argv)
+{
+    // Initialize a ROS node
+    ros::init(argc, argv, "drive_bot");
+
+    // create a ROS Nodehandle object
+    ros::NodeHandle n;
+
+    // inform ROS master that we will be publishing a message of type geometry_msgs::Twist on robot actuation topic with a queue size of 10
+    motor_command_publisher = n.advertise<geometry_msgs::Twist>("/cmd_vel", 10);
+
+    // TODO: Define a drive /ball_chaser/command_robot service with a handle_drive_request callback function
+    ros::ServiceServer service = n.advertiseService("/ball_chaser/command_robot", handle_drive_request);
+    ROS_INFO("Ready to send drive commands");
+    
+
+    // Handle ROS communication events
+    ros::spin();
+    return 0;
+}
